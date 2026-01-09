@@ -36,7 +36,7 @@ body{font-family:Inter,sans-serif;background:#0f0f1a;color:#fff;min-height:100vh
 .container{max-width:900px;margin:0 auto;padding:40px 20px}
 header{text-align:center;margin-bottom:40px}
 .logo{font-size:3rem;margin-bottom:10px}
-h1{font-size:2.5rem;background:linear-gradient(135deg,#e94560,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+h1{font-size:2.5rem;background:linear-gradient(135deg,#e94560,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .subtitle{color:#a0a0b2;margin-top:8px}
 .card{background:#16213e;border-radius:20px;padding:30px;margin-bottom:25px;border:1px solid rgba(255,255,255,0.1)}
 .input-group{display:flex;gap:15px}
@@ -50,7 +50,7 @@ button:disabled{opacity:0.6}
 .stat-label{color:#a0a0b2;text-transform:uppercase}
 .info{background:rgba(108,92,231,0.1);border:1px solid #6c5ce7;padding:15px;border-radius:10px;margin-bottom:20px;color:#a29bfe;text-align:center}
 .files-list{max-height:400px;overflow-y:auto}
-.file-item{display:flex;align-items:center;padding:15px;background:#1a1a2e;border-radius:10px;margin-bottom:10px;text-decoration:none}
+.file-item{display:flex;align-items:center;padding:15px;background:#1a1a2e;border-radius:10px;margin-bottom:10px;text-decoration:none;transition:transform 0.2s}
 .file-item:hover{transform:translateX(5px)}
 .file-icon{width:45px;height:45px;background:linear-gradient(135deg,#ff6b6b,#e94560);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-right:15px;font-size:1.2rem}
 .file-name{flex:1;color:#fff;word-break:break-all}
@@ -76,17 +76,39 @@ button:disabled{opacity:0.6}
 <div id="files" class="files-list"><div class="empty"><div class="icon">📥</div><p>Enter a URL to find PDFs</p></div></div>
 </div></div>
 <script>
-async function scan(){const url=document.getElementById('url').value.trim();if(!url){showErr('Enter a URL');return}
-document.getElementById('btn').disabled=true;document.getElementById('loader').classList.add('show');
-document.getElementById('files').innerHTML='';document.getElementById('err').innerHTML='';document.getElementById('count').textContent='0';
-try{const r=await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-const d=await r.json();document.getElementById('loader').classList.remove('show');document.getElementById('btn').disabled=false;
-if(d.error){showErr(d.error);return}document.getElementById('count').textContent=d.pdfs.length;
-if(d.pdfs.length===0){document.getElementById('files').innerHTML='<div class="empty"><div class="icon">🔍</div><p>No PDFs found</p></div>';return}
-document.getElementById('files').innerHTML=d.pdfs.map(p=>\`<a href="\${p.url}" target="_blank" class="file-item"><div class="file-icon">📄</div><div class="file-name">\${p.name}</div><div class="download-icon">⬇️</div></a>\`).join('')}
-catch(e){document.getElementById('loader').classList.remove('show');document.getElementById('btn').disabled=false;showErr('Error: '+e.message)}}
-function showErr(m){document.getElementById('err').innerHTML=\`<div class="error">⚠️ \${m}</div>\`}
-document.getElementById('url').addEventListener('keypress',e=>{if(e.key==='Enter')scan()})
+async function scan(){
+    var url=document.getElementById('url').value.trim();
+    if(!url){showErr('Enter a URL');return}
+    document.getElementById('btn').disabled=true;
+    document.getElementById('loader').classList.add('show');
+    document.getElementById('files').innerHTML='';
+    document.getElementById('err').innerHTML='';
+    document.getElementById('count').textContent='0';
+    try{
+        var r=await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url})});
+        var d=await r.json();
+        document.getElementById('loader').classList.remove('show');
+        document.getElementById('btn').disabled=false;
+        if(d.error){showErr(d.error);return}
+        document.getElementById('count').textContent=d.pdfs.length;
+        if(d.pdfs.length===0){
+            document.getElementById('files').innerHTML='<div class="empty"><div class="icon">🔍</div><p>No PDFs found</p></div>';
+            return;
+        }
+        var html='';
+        for(var i=0;i<d.pdfs.length;i++){
+            var p=d.pdfs[i];
+            html+='<a href="'+p.url+'" target="_blank" class="file-item"><div class="file-icon">📄</div><div class="file-name">'+p.name+'</div><div class="download-icon">⬇️</div></a>';
+        }
+        document.getElementById('files').innerHTML=html;
+    }catch(e){
+        document.getElementById('loader').classList.remove('show');
+        document.getElementById('btn').disabled=false;
+        showErr('Error: '+e.message);
+    }
+}
+function showErr(m){document.getElementById('err').innerHTML='<div class="error">⚠️ '+m+'</div>'}
+document.getElementById('url').addEventListener('keypress',function(e){if(e.key==='Enter')scan()});
 </script></body></html>"""
 
 @app.route('/')
